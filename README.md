@@ -2,7 +2,12 @@
 
 Plataforma de gestión y venta de flores desarrollada en Flask, que integra capacidades de Inteligencia Artificial (mediante Groq y Llama-3.1-8b) para mejorar la experiencia tanto de los clientes (mediante un chatbot asistente) como de los administradores (mediante un dashboard analítico avanzado).
 
----
+--- 
+
+## Integrantes Equipo 14
+- Limberg Edgar Montes Tancara
+- Jhimy Fuentes Rojas
+
 
 ## 1. Documentación de la Inteligencia Artificial (IA)
 
