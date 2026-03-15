@@ -466,7 +466,14 @@ document.addEventListener('DOMContentLoaded', function() {
               const cardDiv = document.createElement('div');
               cardDiv.className = `chatbot-product-card msg-${sender}`;
               
-              const imgUrl = prod.imagen && prod.imagen !== '' && !prod.imagen.includes('default') ? prod.imagen : 'https://placehold.co/300x200/e9ecef/495057?text=Floreria';
+              let imgUrl = 'https://placehold.co/300x200/e9ecef/495057?text=Floreria';
+              if (prod.imagen && prod.imagen !== '' && !prod.imagen.includes('default')) {
+                  if (prod.imagen.startsWith('http') || prod.imagen.startsWith('/')) {
+                      imgUrl = prod.imagen;
+                  } else {
+                      imgUrl = '/static/' + prod.imagen;
+                  }
+              }
               
               cardDiv.innerHTML = `
                 <img src="${imgUrl}" class="chatbot-product-img" alt="${prod.nombre}" onerror="this.src='https://placehold.co/300x200/e9ecef/495057?text=Floreria'">
