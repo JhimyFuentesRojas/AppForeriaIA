@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Producto{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('productos.listar') }}">Productos</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('productos.ver', id=producto.id) }}">{{ producto.nombre }}</a></li>
+        <li class="breadcrumb-item active">Editar</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Editar Producto</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('productos.editar', id=producto.id) }}" enctype="multipart/form-data" id="form-editar">
+                    <div class="row">
+                        <!-- Información Básica -->
+                        <div class="col-md-8">
+                            <h5 class="mb-3"><i class="bi bi-info-circle"></i> Información Básica</h5>
+
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">
+                                    <i class="bi bi-flower1"></i> Nombre del Producto *
+                                </label>
+                                <input type="text" class="form-control" id="nombre" name="nombre"
+                                       value="{{ producto.nombre }}" required autofocus>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="descripcion" class="form-label">
+                                    <i class="bi bi-text-paragraph"></i> Descripción
+                                </label>
+                                <textarea class="form-control" id="descripcion" name="descripcion" rows="4" maxlength="1000">{{ producto.descripcion or '' }}</textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="categoria_id" class="form-label">
+                                        <i class="bi bi-tag"></i> Categoría *
+                                    </label>
+                                    <select class="form-select" id="categoria_id" name="categoria_id" required>
+                                        {% for categoria in categorias %}
+                                        <option value="{{ categoria.id }}"
+                                                {% if categoria.id == producto.categoria_id %}selected{% endif %}>
+                                            {{ categoria.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="sku" class="form-label">
+                                        <i class="bi bi-upc"></i> SKU
+                                    </label>
+                                    <input type="text" class="form-control" id="sku" name="sku"
+                                           value="{{ producto.sku }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="precio" class="form-label">
+                                        <i class="bi bi-cash"></i> Precio *
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="precio" name="precio"
+                                               step="0.01" min="0.01" max="9999999.99"
+                                               value="{{ producto.precio }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="stock" class="form-label">
+                                        <i class="bi bi-box"></i> Stock *
+                                    </label>
+                                    <input type="number" class="form-control" id="stock" name="stock"
+                                           min="0" max="999999" value="{{ producto.stock }}" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="activo" name="activo"
+                                           {% if producto.activo %}checked{% endif %}>
+                                    <label class="form-check-label" for="activo">
+                                        <i class="bi bi-toggle-{{ 'on' if producto.activo else 'off' }}"></i> Producto activo
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="destacado" name="destacado"
+                                           {% if producto.destacado %}checked{% endif %}>
+                                    <label class="form-check-label" for="destacado">
+                                        <i class="bi bi-star{{ '-fill' if producto.destacado else '' }}"></i> Marcar como destacado
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Imagen del Producto -->
+                        <div class="col-md-4">
+                            <h5 class="mb-3"><i class="bi bi-image"></i> Imagen del Producto</h5>
+
+                            <!-- Imagen Actual -->
+                            {% if producto.imagen %}
+                            <div class="card mb-3">
+                                <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.nombre }}">
+                                <div class="card-body">
+                                    <p class="small mb-2"><strong>Imagen actual</strong></p>
+                                    <form method="POST" action="{{ url_for('productos.eliminar_imagen_producto', id=producto.id) }}"
+                                          onsubmit="return confirm('¿Eliminar la imagen actual?')" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger w-100">
+                                            <i class="bi bi-trash"></i> Eliminar Imagen
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Este producto no tiene imagen
+                            </div>
+                            {% endif %}
+
+                            <!-- Subir Nueva Imagen -->
+                            <div class="mb-3">
+                                <label for="imagen" class="form-label">
+                                    {{ 'Cambiar' if producto.imagen else 'Subir' }} Imagen
+                                </label>
+                                <input type="file" class="form-control" id="imagen" name="imagen"
+                                       accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+                                <div class="form-text">
+                                    <strong>Formatos:</strong> PNG, JPG, JPEG, GIF, WEBP<br>
+                                    <strong>Tamaño máximo:</strong> 16 MB
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Nota:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Los cambios afectarán la visualización del producto</li>
+                            <li>Si subes una nueva imagen, reemplazará la actual</li>
+                            <li>La imagen se optimizará automáticamente</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('productos.ver', id=producto.id) }}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <input type="submit" class="btn btn-warning btn-lg" id="btn-guardar" value="💾 Guardar Cambios">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información Adicional -->
+        <div class="card shadow mt-3">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Historial</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="fw-bold" width="30%">Creado:</td>
+                        <td>{{ producto.fecha_creacion|datetime }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Última actualización:</td>
+                        <td>{{ producto.fecha_actualizacion|datetime }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Pedidos realizados:</td>
+                        <td>{{ producto.detalles_pedido.count() }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form-editar');
+    const btnGuardar = document.getElementById('btn-guardar');
+
+    if (btnGuardar && form) {
+        // FORZAR submit con click event
+        btnGuardar.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevenir el comportamiento por defecto
+            e.stopPropagation(); // Detener propagación
+
+            console.log('🔵 Click interceptado');
+
+            // Validar campos
+            const nombre = document.getElementById('nombre').value;
+            const precio = document.getElementById('precio').value;
+            const stock = document.getElementById('stock').value;
+            const categoria = document.getElementById('categoria_id').value;
+
+            if (!nombre || !precio || !stock || !categoria) {
+                alert('⚠️ Completa todos los campos obligatorios');
+                return false;
+            }
+
+            console.log('✅ Campos válidos');
+            console.log('🚀 FORZANDO SUBMIT del formulario...');
+
+            // Deshabilitar botón
+            btnGuardar.disabled = true;
+            btnGuardar.value = '⏳ Guardando...';
+
+            // FORZAR el submit directamente
+            setTimeout(function() {
+                console.log('📤 Ejecutando form.submit()...');
+                form.submit();
+            }, 100);
+        }, true); // useCapture = true para capturar antes que otros eventos
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'admin/base.html' %} {% block head_css %} {{ super() }}
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/admin-style.css') }}"
+/>
+{% endblock %} {% block page_body %}
+<div class="admin-wrapper">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-success fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('admin.index') }}">
+        <i class="bi bi-flower2"></i> Florería Admin
+      </a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#adminNavbar"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="adminNavbar">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.index') }}">
+              <i class="bi bi-house-door"></i> Volver al Sitio
+            </a>
+          </li>
+          {% if current_user.is_authenticated %}
+          <li class="nav-item">
+            <span class="nav-link">
+              <i class="bi bi-person-circle"></i> {{ current_user.username }}
+              <span class="badge bg-warning text-dark"
+                >{{ current_user.rol }}</span
+              >
+            </span>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-container">
+    <div class="admin-sidebar bg-light">
+      <div class="sidebar-header">
+        <h5><i class="bi bi-speedometer2"></i> Panel de Control</h5>
+      </div>
+      <ul class="nav flex-column sidebar-nav">
+        <li class="nav-item">
+          <a
+            class="nav-link {{ 'active' if request.endpoint == 'admin.index' else '' }}"
+            href="{{ url_for('admin.index') }}"
+          >
+            <i class="bi bi-house-door"></i> Inicio
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <div class="sidebar-category"><i class="bi bi-gear"></i> Gestión</div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('productos.listar') }}">
+            <i class="bi bi-box-seam"></i> Productos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('categorias.listar') }}">
+            <i class="bi bi-tags"></i> Categorías
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <div class="sidebar-category"><i class="bi bi-cart"></i> Ventas</div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('pedidos.listar') }}">
+            <i class="bi bi-receipt"></i> Pedidos
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="admin-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="container-fluid mt-3">
+        {% for category, message in messages %}
+        <div
+          class="alert alert-{{ category }} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+          ></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+
+      <div class="container-fluid py-4">{% block body %}{% endblock %}</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

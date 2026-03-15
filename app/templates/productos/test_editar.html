@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Editar</title>
+</head>
+<body>
+    <h1>PRUEBA SIMPLE - Editar Producto ID: {{ producto.id }}</h1>
+
+    <form method="POST" action="{{ url_for('productos.editar', id=producto.id) }}">
+        <p>
+            <label>Nombre:</label>
+            <input type="text" name="nombre" value="{{ producto.nombre }}" required>
+        </p>
+
+        <p>
+            <label>Precio:</label>
+            <input type="number" name="precio" value="{{ producto.precio }}" step="0.01" required>
+        </p>
+
+        <p>
+            <label>Stock:</label>
+            <input type="number" name="stock" value="{{ producto.stock }}" required>
+        </p>
+
+        <p>
+            <label>Categoría:</label>
+            <input type="number" name="categoria_id" value="{{ producto.categoria_id }}" required>
+        </p>
+
+        <p>
+            <label>SKU:</label>
+            <input type="text" name="sku" value="{{ producto.sku }}">
+        </p>
+
+        <p>
+            <label>
+                <input type="checkbox" name="activo" {% if producto.activo %}checked{% endif %}>
+                Activo
+            </label>
+        </p>
+
+        <p>
+            <label>
+                <input type="checkbox" name="destacado" {% if producto.destacado %}checked{% endif %}>
+                Destacado
+            </label>
+        </p>
+
+        <button type="submit" style="padding: 20px; font-size: 20px; background: green; color: white;">
+            GUARDAR CAMBIOS
+        </button>
+    </form>
+
+    <hr>
+    <p><a href="{{ url_for('productos.ver', id=producto.id) }}">Volver</a></p>
+</body>
+</html>

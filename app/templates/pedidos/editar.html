@@ -1,0 +1,222 @@
+{% extends "base.html" %} {% block title %}Editar Pedido{% endblock %} {% block
+content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('main.index') }}">Inicio</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('pedidos.listar') }}">Pedidos</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('pedidos.ver', id=pedido.id) }}"
+        >{{ pedido.numero_pedido }}</a
+      >
+    </li>
+    <li class="breadcrumb-item active">Editar</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow">
+      <div class="card-header bg-warning text-dark">
+        <h4 class="mb-0">
+          <i class="bi bi-pencil"></i> Editar Pedido {{ pedido.numero_pedido }}
+        </h4>
+      </div>
+      <div class="card-body p-4">
+        <div class="alert alert-info mb-4">
+          <i class="bi bi-info-circle"></i>
+          <strong>Nota:</strong> Solo puedes editar la información de entrega y
+          el estado del pedido. Los productos no se pueden modificar una vez
+          creado el pedido.
+        </div>
+
+        <form
+          method="POST"
+          action="{{ url_for('pedidos.editar', id=pedido.id) }}"
+        >
+          <!-- Estado del Pedido -->
+          <div class="mb-3">
+            <label for="estado" class="form-label">
+              <i class="bi bi-arrow-repeat"></i> Estado del Pedido *
+            </label>
+            <select class="form-select" id="estado" name="estado" required disabled>
+              <option value="completado" selected>
+                Completado
+              </option>
+            </select>
+            <div class="form-text">
+              <strong>Nota:</strong> Todas las ventas se completan automáticamente. El estado no se puede modificar.
+            </div>
+          </div>
+
+          <hr />
+
+          <!-- Información de Entrega -->
+          <h5 class="mb-3">
+            <i class="bi bi-geo-alt"></i> Información de Entrega
+          </h5>
+
+          <div class="mb-3">
+            <label for="direccion_entrega" class="form-label"
+              >Dirección de Entrega *</label
+            >
+            <textarea
+              class="form-control"
+              id="direccion_entrega"
+              name="direccion_entrega"
+              rows="3"
+              required
+            >
+{{ pedido.direccion_entrega }}</textarea
+            >
+            <div class="form-text">Mínimo 10 caracteres</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="telefono_contacto" class="form-label"
+              >Teléfono de Contacto *</label
+            >
+            <input
+              type="tel"
+              class="form-control"
+              id="telefono_contacto"
+              name="telefono_contacto"
+              value="{{ pedido.telefono_contacto }}"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="notas" class="form-label">Notas</label>
+            <textarea
+              class="form-control"
+              id="notas"
+              name="notas"
+              rows="3"
+              maxlength="1000"
+            >
+{{ pedido.notas or '' }}</textarea
+            >
+          </div>
+
+          <div class="mb-3">
+            <label for="fecha_entrega" class="form-label"
+              >Fecha de Entrega Estimada</label
+            >
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="fecha_entrega"
+              name="fecha_entrega"
+              value="{{ pedido.fecha_entrega.strftime('%Y-%m-%dT%H:%M') if pedido.fecha_entrega else '' }}"
+            />
+          </div>
+
+          <hr />
+
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Advertencia:</strong>
+            <ul class="mb-0 mt-2">
+              <li>
+                Si cambias el estado a "Cancelado", se devolverá el stock de los
+                productos
+              </li>
+              <li>No se pueden modificar los productos del pedido</li>
+              <li>Los cambios de estado deben seguir el flujo correcto</li>
+            </ul>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a
+              href="{{ url_for('pedidos.ver', id=pedido.id) }}"
+              class="btn btn-secondary btn-lg"
+            >
+              <i class="bi bi-x-circle"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-warning btn-lg">
+              <i class="bi bi-check-circle"></i> Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow mt-4">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">
+          <i class="bi bi-box-seam"></i> Productos del Pedido (No Editable)
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th class="text-end">Precio</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in pedido.detalles %}
+              <tr>
+                <td>
+                  <strong>{{ detalle.producto.nombre }}</strong><br />
+                  <small class="text-muted"
+                    >SKU: {{ detalle.producto.sku }}</small
+                  >
+                </td>
+                <td class="text-end">{{ detalle.precio_unitario|currency }}</td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ detalle.cantidad }}</span>
+                </td>
+                <td class="text-end fw-bold">
+                  {{ detalle.subtotal|currency }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+              <tr class="table-success">
+                <td colspan="3" class="text-end fw-bold">TOTAL:</td>
+                <td class="text-end fw-bold text-success">
+                  {{ pedido.total|currency }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow mt-4">
+      <div class="card-header bg-secondary text-white">
+        <h6 class="mb-0">
+          <i class="bi bi-person"></i> Información del Cliente
+        </h6>
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless table-sm mb-0">
+          <tr>
+            <td class="fw-bold" width="30%">Nombre:</td>
+            <td>{{ pedido.cliente.nombre_completo }}</td>
+          </tr>
+          <tr>
+            <td class="fw-bold">Email:</td>
+            <td>{{ pedido.cliente.email }}</td>
+          </tr>
+          <tr>
+            <td class="fw-bold">Usuario:</td>
+            <td>@{{ pedido.cliente.username }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

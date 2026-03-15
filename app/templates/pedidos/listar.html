@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Ventas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2><i class="bi bi-bag-check"></i> {{ 'Todas las Ventas' if current_user.is_vendedor() else 'Mis Ventas' }}</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('pedidos.crear') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nueva Venta
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('pedidos.listar') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="busqueda" class="form-label"><i class="bi bi-search"></i> Buscar</label>
+                    <input type="text" class="form-control" id="busqueda" name="busqueda"
+                           value="{{ busqueda }}" placeholder="Número de pedido...">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="orden" class="form-label"><i class="bi bi-sort-down"></i> Ordenar</label>
+                    <select class="form-select" id="orden" name="orden">
+                        <option value="fecha_desc" {% if orden == 'fecha_desc' %}selected{% endif %}>Más Recientes</option>
+                        <option value="fecha_asc" {% if orden == 'fecha_asc' %}selected{% endif %}>Más Antiguos</option>
+                        <option value="total_desc" {% if orden == 'total_desc' %}selected{% endif %}>Mayor Total</option>
+                        <option value="total_asc" {% if orden == 'total_asc' %}selected{% endif %}>Menor Total</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Listado de Pedidos -->
+{% if pedidos %}
+<div class="row">
+    {% for pedido in pedidos %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-receipt-cutoff"></i> {{ pedido.numero_pedido }}
+                    </h6>
+                    <span class="badge bg-dark">
+                        <i class="bi bi-check-circle"></i> COMPLETADO
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_vendedor() %}
+                <p class="mb-2">
+                    <strong><i class="bi bi-person"></i> Cliente:</strong> {{ pedido.cliente.nombre_completo }}
+                </p>
+                {% endif %}
+
+                <p class="mb-2">
+                    <strong><i class="bi bi-calendar"></i> Fecha:</strong> {{ pedido.fecha_pedido|datetime('%d/%m/%Y %H:%M') }}
+                </p>
+
+                <p class="mb-2">
+                    <strong><i class="bi bi-box"></i> Productos:</strong> {{ pedido.detalles.count() }} items
+                </p>
+
+                <p class="mb-2">
+                    <strong><i class="bi bi-geo-alt"></i> Entrega:</strong> {{ pedido.direccion_entrega[:50] }}...
+                </p>
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="text-success mb-0">{{ pedido.total|currency }}</h4>
+                    <div class="btn-group">
+                        <a href="{{ url_for('pedidos.ver', id=pedido.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Ver
+                        </a>
+
+                        {% if current_user.is_vendedor() and pedido.estado not in ['entregado', 'cancelado'] %}
+                        <a href="{{ url_for('pedidos.editar', id=pedido.id) }}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        {% endif %}
+
+                        {% if pedido.estado == 'pendiente' %}
+                        <form method="POST" action="{{ url_for('pedidos.cancelar', id=pedido.id) }}"
+                              onsubmit="return confirm('¿Cancelar este pedido?')" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Paginación">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('pedidos.listar', page=pagination.prev_num, busqueda=busqueda, estado=estado, orden=orden) }}">
+                Anterior
+            </a>
+        </li>
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('pedidos.listar', page=page_num, busqueda=busqueda, estado=estado, orden=orden) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('pedidos.listar', page=pagination.next_num, busqueda=busqueda, estado=estado, orden=orden) }}">
+                Siguiente
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="bi bi-inbox" style="font-size: 4rem;"></i>
+    <h4 class="mt-3">No se encontraron pedidos</h4>
+    <p>{{ 'No hay pedidos en el sistema' if current_user.is_vendedor() else 'Aún no has realizado ningún pedido' }}</p>
+    <a href="{{ url_for('pedidos.crear') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Crear Primer Pedido
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Productos{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2><i class="bi bi-flower2"></i> Catálogo de Productos</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        {% if current_user.is_authenticated and current_user.is_vendedor() %}
+        <a href="{{ url_for('productos.crear') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nuevo Producto
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros y Búsqueda Avanzada -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('productos.listar') }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="busqueda" class="form-label"><i class="bi bi-search"></i> Buscar</label>
+                    <input type="text" class="form-control" id="busqueda" name="busqueda"
+                           value="{{ busqueda }}" placeholder="Nombre del producto...">
+                </div>
+
+                <div class="col-md-2">
+                    <label for="categoria_id" class="form-label"><i class="bi bi-tag"></i> Categoría</label>
+                    <select class="form-select" id="categoria_id" name="categoria_id">
+                        <option value="">Todas</option>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.id }}" {% if categoria_id == cat.id %}selected{% endif %}>
+                            {{ cat.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="precio_min" class="form-label"><i class="bi bi-cash"></i> Precio Mín.</label>
+                    <input type="number" class="form-control" id="precio_min" name="precio_min"
+                           value="{{ precio_min or '' }}" step="0.01" min="0" placeholder="0.00">
+                </div>
+
+                <div class="col-md-2">
+                    <label for="precio_max" class="form-label"><i class="bi bi-cash-stack"></i> Precio Máx.</label>
+                    <input type="number" class="form-control" id="precio_max" name="precio_max"
+                           value="{{ precio_max or '' }}" step="0.01" min="0" placeholder="999.99">
+                </div>
+
+                <div class="col-md-2">
+                    <label for="orden" class="form-label"><i class="bi bi-sort-down"></i> Ordenar</label>
+                    <select class="form-select" id="orden" name="orden">
+                        <option value="nombre" {% if orden == 'nombre' %}selected{% endif %}>Nombre</option>
+                        <option value="precio_asc" {% if orden == 'precio_asc' %}selected{% endif %}>Precio: Menor a Mayor</option>
+                        <option value="precio_desc" {% if orden == 'precio_desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
+                        <option value="fecha" {% if orden == 'fecha' %}selected{% endif %}>Más Recientes</option>
+                        <option value="stock" {% if orden == 'stock' %}selected{% endif %}>Mayor Stock</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="destacados" name="destacados"
+                               {% if solo_destacados %}checked{% endif %}>
+                        <label class="form-check-label" for="destacados">
+                            <i class="bi bi-star-fill text-warning"></i> Solo productos destacados
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Listado de Productos -->
+{% if productos %}
+<div class="row">
+    {% for producto in productos %}
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 shadow-sm">
+            <!-- Imagen del Producto -->
+            {% if producto.imagen %}
+            <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.nombre }}"
+                 style="height: 250px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                <i class="bi bi-flower2 text-muted" style="font-size: 5rem;"></i>
+            </div>
+            {% endif %}
+
+            <!-- Badges -->
+            <div class="position-absolute top-0 start-0 m-2">
+                <span class="badge bg-success">{{ producto.categoria.nombre }}</span>
+            </div>
+            {% if producto.destacado %}
+            <div class="position-absolute top-0 end-0 m-2">
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-star-fill"></i> Destacado
+                </span>
+            </div>
+            {% endif %}
+
+            <div class="card-body">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <p class="card-text small text-muted">
+                    {{ producto.descripcion[:60] if producto.descripcion else 'Sin descripción' }}...
+                </p>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="h4 text-success mb-0">{{ producto.precio|currency }}</span>
+                    <span class="badge bg-{{ 'success' if producto.stock > 10 else 'warning' if producto.stock > 0 else 'danger' }}">
+                        Stock: {{ producto.stock }}
+                    </span>
+                </div>
+
+                <small class="text-muted">
+                    <i class="bi bi-upc"></i> SKU: {{ producto.sku }}
+                </small>
+            </div>
+
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between gap-2">
+                    <a href="{{ url_for('productos.ver', id=producto.id) }}" class="btn btn-sm btn-outline-success flex-grow-1">
+                        <i class="bi bi-eye"></i> Ver
+                    </a>
+
+                    {% if current_user.is_authenticated and current_user.is_vendedor() %}
+                    <a href="{{ url_for('productos.editar', id=producto.id) }}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if pagination.pages > 1 %}
+<nav aria-label="Paginación">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('productos.listar', page=pagination.prev_num, busqueda=busqueda, categoria_id=categoria_id, precio_min=precio_min, precio_max=precio_max, orden=orden, destacados=solo_destacados) }}">
+                Anterior
+            </a>
+        </li>
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('productos.listar', page=page_num, busqueda=busqueda, categoria_id=categoria_id, precio_min=precio_min, precio_max=precio_max, orden=orden, destacados=solo_destacados) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('productos.listar', page=pagination.next_num, busqueda=busqueda, categoria_id=categoria_id, precio_min=precio_min, precio_max=precio_max, orden=orden, destacados=solo_destacados) }}">
+                Siguiente
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="bi bi-inbox" style="font-size: 4rem;"></i>
+    <h4 class="mt-3">No se encontraron productos</h4>
+    <p>No hay productos que coincidan con tu búsqueda.</p>
+    {% if current_user.is_authenticated and current_user.is_vendedor() %}
+    <a href="{{ url_for('productos.crear') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Crear Primer Producto
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

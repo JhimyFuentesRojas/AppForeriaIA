@@ -1,0 +1,128 @@
+{% extends "base.html" %} {% block title %}Inicio{% endblock %} {% block content
+%}
+<div class="row">
+  <div class="col-12">
+    <div class="jumbotron bg-success text-white p-5 rounded mb-4">
+      <h1 class="display-4">
+        <i class="bi bi-flower2"></i> Bienvenido a Nuestra Florería
+      </h1>
+      <p class="lead">
+        Las flores y plantas más hermosas para cada ocasión especial
+      </p>
+      <hr class="my-4 bg-white" />
+      <p>
+        Descubre nuestra amplia variedad de flores frescas, plantas y arreglos
+        florales
+      </p>
+      <a
+        class="btn btn-light btn-lg"
+        href="{{ url_for('tienda.index') }}"
+        role="button"
+      >
+        <i class="bi bi-shop"></i> Ir a la Tienda
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <h2 class="mb-3"><i class="bi bi-tags"></i> Categorías</h2>
+  </div>
+  {% if categorias %} {% for categoria in categorias %}
+  <div class="col-md-3 mb-3">
+    <div class="card h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-flower1 text-success" style="font-size: 3rem"></i>
+        <h5 class="card-title mt-2">{{ categoria.nombre }}</h5>
+        <p class="card-text small">{{ categoria.descripcion[:50] }}...</p>
+        <a
+          href="{{ url_for('tienda.index', categoria=categoria.id) }}"
+          class="btn btn-sm btn-outline-success"
+        >
+          Ver Productos
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %} {% else %}
+  <div class="col-12">
+    <div class="alert alert-info">No hay categorías disponibles.</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <h2 class="mb-3">
+      <i class="bi bi-star-fill text-warning"></i> Productos Destacados
+    </h2>
+  </div>
+  {% if productos %} {% for producto in productos %}
+  <div class="col-md-3 mb-4">
+    <div class="card h-100">
+      {% if producto.imagen %}
+      <img
+        src="{{ url_for('static', filename=producto.imagen) }}"
+        class="card-img-top"
+        alt="{{ producto.nombre }}"
+        style="height: 200px; object-fit: cover"
+      />
+      {% else %}
+      <div
+        class="card-img-top bg-light d-flex align-items-center justify-content-center"
+        style="height: 200px"
+      >
+        <i class="bi bi-flower2 text-muted" style="font-size: 4rem"></i>
+      </div>
+      {% endif %}
+      <div class="card-body">
+        <span class="badge bg-success mb-2"
+          >{{ producto.categoria.nombre }}</span
+        >
+        <h5 class="card-title">{{ producto.nombre }}</h5>
+        <p class="card-text small text-muted">
+          {{ producto.descripcion[:80] if producto.descripcion else 'Sin
+          descripción' }}...
+        </p>
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="text-success mb-0">{{ producto.precio|currency }}</h4>
+          <span class="badge bg-info">Stock: {{ producto.stock }}</span>
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <a
+          href="{{ url_for('tienda.detalle_producto', id=producto.id) }}"
+          class="btn btn-success btn-sm w-100"
+        >
+          <i class="bi bi-eye"></i> Ver Detalle
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %} {% else %}
+  <div class="col-12">
+    <div class="alert alert-info">
+      No hay productos destacados en este momento.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if not current_user.is_authenticated %}
+<div class="row mt-5">
+  <div class="col-12">
+    <div class="card bg-light">
+      <div class="card-body text-center py-5">
+        <h3><i class="bi bi-person-plus"></i> ¿Nuevo cliente?</h3>
+        <p class="lead">
+          Regístrate para realizar pedidos y disfrutar de beneficios exclusivos
+        </p>
+        <a href="{{ url_for('auth.registro') }}" class="btn btn-success btn-lg">
+          Crear Cuenta
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %}

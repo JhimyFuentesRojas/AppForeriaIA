@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ producto.nombre }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('productos.listar') }}">Productos</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('categorias.ver', id=producto.categoria.id) }}">{{ producto.categoria.nombre }}</a></li>
+        <li class="breadcrumb-item active">{{ producto.nombre }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Imagen del Producto -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow">
+            {% if producto.imagen %}
+            <img src="{{ url_for('static', filename=producto.imagen) }}" class="card-img-top" alt="{{ producto.nombre }}"
+                 style="width: 100%; height: 400px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 400px;">
+                <i class="bi bi-flower2 text-muted" style="font-size: 8rem;"></i>
+            </div>
+            {% endif %}
+
+            <!-- Badges en la imagen -->
+            {% if producto.destacado %}
+            <div class="position-absolute top-0 end-0 m-3">
+                <span class="badge bg-warning text-dark fs-6">
+                    <i class="bi bi-star-fill"></i> Destacado
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Información del Producto -->
+    <div class="col-md-7">
+        <div class="mb-3">
+            <span class="badge bg-success fs-6">{{ producto.categoria.nombre }}</span>
+            {% if not producto.activo %}
+            <span class="badge bg-secondary fs-6">Inactivo</span>
+            {% endif %}
+        </div>
+
+        <h1 class="display-5">{{ producto.nombre }}</h1>
+        <p class="lead text-muted">{{ producto.descripcion or 'Sin descripción disponible' }}</p>
+
+        <hr>
+
+        <div class="row mb-4">
+            <div class="col-6">
+                <h2 class="text-success">{{ producto.precio|currency }}</h2>
+            </div>
+            <div class="col-6 text-end">
+                <h4>
+                    <span class="badge bg-{{ 'success' if producto.stock > 10 else 'warning' if producto.stock > 0 else 'danger' }}">
+                        Stock: {{ producto.stock }} unidades
+                    </span>
+                </h4>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="card-title"><i class="bi bi-info-circle"></i> Información del Producto</h6>
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <td class="fw-bold" width="30%">SKU:</td>
+                        <td><code>{{ producto.sku }}</code></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Categoría:</td>
+                        <td>
+                            <a href="{{ url_for('categorias.ver', id=producto.categoria.id) }}">
+                                {{ producto.categoria.nombre }}
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Precio:</td>
+                        <td class="text-success fw-bold">{{ producto.precio|currency }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Stock Disponible:</td>
+                        <td>
+                            {{ producto.stock }} unidades
+                            {% if producto.stock_disponible %}
+                            <span class="badge bg-success">Disponible</span>
+                            {% else %}
+                            <span class="badge bg-danger">Agotado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Estado:</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if producto.activo else 'secondary' }}">
+                                {{ 'Activo' if producto.activo else 'Inactivo' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Agregado:</td>
+                        <td>{{ producto.fecha_creacion|datetime }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Última Actualización:</td>
+                        <td>{{ producto.fecha_actualizacion|datetime }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="d-grid gap-2">
+            {% if current_user.is_authenticated %}
+                {% if current_user.is_vendedor() %}
+                <div class="btn-group">
+                    <a href="{{ url_for('productos.editar', id=producto.id) }}" class="btn btn-warning btn-lg">
+                        <i class="bi bi-pencil"></i> Editar Producto
+                    </a>
+                    <form method="POST" action="{{ url_for('productos.toggle_destacado', id=producto.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-{{ 'outline-warning' if producto.destacado else 'warning' }} btn-lg">
+                            <i class="bi bi-star{{ '-fill' if producto.destacado else '' }}"></i>
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('productos.eliminar', id=producto.id) }}"
+                          onsubmit="return confirm('¿Seguro que deseas eliminar este producto?')" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{{ url_for('pedidos.crear') }}" class="btn btn-success btn-lg">
+                    <i class="bi bi-cart-plus"></i> Agregar al Pedido
+                </a>
+                {% endif %}
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg">
+                <i class="bi bi-box-arrow-in-right"></i> Inicia Sesión para Comprar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Productos Relacionados -->
+{% if productos_relacionados %}
+<hr class="my-5">
+<div class="row">
+    <div class="col-12 mb-4">
+        <h3><i class="bi bi-flower1"></i> Productos Relacionados</h3>
+        <p class="text-muted">Otros productos de {{ producto.categoria.nombre }}</p>
+    </div>
+
+    {% for related in productos_relacionados %}
+    <div class="col-md-3 mb-3">
+        <div class="card h-100 shadow-sm">
+            {% if related.imagen %}
+            <img src="{{ url_for('static', filename=related.imagen) }}" class="card-img-top" alt="{{ related.nombre }}"
+                 style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="bi bi-flower2 text-muted" style="font-size: 4rem;"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h6 class="card-title">{{ related.nombre }}</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h5 text-success mb-0">{{ related.precio|currency }}</span>
+                    <span class="badge bg-info">Stock: {{ related.stock }}</span>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <a href="{{ url_for('productos.ver', id=related.id) }}" class="btn btn-sm btn-outline-success w-100">
+                    <i class="bi bi-eye"></i> Ver Detalle
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

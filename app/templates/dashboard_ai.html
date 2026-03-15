@@ -1,0 +1,477 @@
+{% extends 'base.html' %} 
+
+{% block title %}Dashboard Inteligente IA{% endblock %} 
+
+{% block extra_css %}
+<style>
+  .kpi-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    background: white;
+    overflow: hidden;
+  }
+  
+  .kpi-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+  }
+
+  .icon-sales { background: linear-gradient(135deg, #0d6efd, #0dcaf0); }
+  .icon-orders { background: linear-gradient(135deg, #198754, #20c997); }
+  .icon-products { background: linear-gradient(135deg, #6f42c1, #d63384); }
+  .icon-alerts { background: linear-gradient(135deg, #dc3545, #fd7e14); }
+
+  .ai-panel {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    border-left: 5px solid #6f42c1;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  }
+
+  .ai-badge {
+    background: linear-gradient(135deg, #6f42c1, #d63384);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    height: 100%;
+  }
+
+  .stock-table tr td {
+    vertical-align: middle;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 15px;
+    flex-direction: column;
+  }
+  
+  .spinner-groq {
+    width: 40px; height: 40px;
+    border: 4px solid rgba(111, 66, 193, 0.2);
+    border-top-color: #6f42c1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+</style>
+{% endblock %} 
+
+{% block content %}
+<div class="container-fluid py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-dark mb-0">Dashboard Inteligente <span class="badge bg-primary fs-6 align-middle"><i class="bi bi-robot"></i> by Groq IA</span></h2>
+      <p class="text-muted">Análisis en tiempo real de tu florería</p>
+    </div>
+    <button class="btn btn-outline-primary shadow-sm" id="btn-refresh">
+      <i class="bi bi-arrow-clockwise"></i> Actualizar
+    </button>
+  </div>
+
+  <div id="main-dashboard" class="position-relative">
+    <!-- Overlay de carga inicial -->
+    <div class="loading-overlay" id="dashboard-loader">
+      <div class="spinner-groq mb-3"></div>
+      <h5 class="text-muted font-monospace">Analizando datos con Llama 3.1...</h5>
+    </div>
+
+    <!-- AI Resumen Panel -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="ai-panel p-4">
+          <div class="d-flex align-items-center mb-3">
+            <span class="ai-badge"><i class="bi bi-stars"></i> Resumen IA</span>
+            <h5 class="ms-3 mb-0 fw-bold text-dark">Análisis Ejecutivo</h5>
+          </div>
+          <p id="ai-summary-text" class="lead text-secondary mb-0 fst-italic">
+            Generando análisis de negocio inteligente...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-4">
+      <div class="col-xl-3 col-md-6">
+        <div class="kpi-card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon icon-sales shadow-sm">
+              <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="ms-3">
+              <p class="text-muted mb-0 fw-semibold">Ventas Totales</p>
+              <h3 class="mb-0 fw-bold text-dark" id="kpi-ventas">$0.00</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="kpi-card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon icon-orders shadow-sm">
+              <i class="bi bi-bag-check"></i>
+            </div>
+            <div class="ms-3">
+              <p class="text-muted mb-0 fw-semibold">Pedidos (Hoy)</p>
+              <h3 class="mb-0 fw-bold text-dark" id="kpi-pedidos">0</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="kpi-card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon icon-products shadow-sm">
+              <i class="bi bi-flower1"></i>
+            </div>
+            <div class="ms-3">
+              <p class="text-muted mb-0 fw-semibold">Productos Activos</p>
+              <h3 class="mb-0 fw-bold text-dark" id="kpi-productos">0</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="kpi-card p-3">
+          <div class="d-flex align-items-center">
+            <div class="kpi-icon icon-alerts shadow-sm">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="ms-3">
+              <p class="text-muted mb-0 fw-semibold">Alertas (Stock < 5)</p>
+              <h3 class="mb-0 fw-bold text-danger" id="kpi-alertas">0</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7">
+        <div class="chart-container">
+          <h5 class="fw-bold mb-4">Top 5 Productos Más Vendidos</h5>
+          <div style="position: relative; height: 280px; width: 100%;">
+              <canvas id="topProductsChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="chart-container">
+          <h5 class="fw-bold mb-4">Ventas por Categoría</h5>
+          <div style="position: relative; height: 280px; width: 100%;">
+              <canvas id="categoriesChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de stock -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0">
+            <h5 class="fw-bold"><i class="bi bi-box-seam text-danger me-2"></i> Productos con Bajo Stock (Requieren Reposición)</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table stock-table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Producto</th>
+                    <th>Stock Actual</th>
+                    <th>Valor/Unit.</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="stock-table-body">
+                  <!-- Llenado por JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Actualizar Stock -->
+    <div class="modal fade" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="stockModalLabel"><i class="bi bi-box-seam me-2"></i>Actualizar Stock</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <h6 class="fw-bold mb-3" id="modalProductName">Nombre del Producto</h6>
+            <form id="updateStockForm">
+              <input type="hidden" id="modalProductId">
+              <div class="mb-3">
+                <label class="form-label text-muted">Stock Actual</label>
+                <div class="fs-4 fw-bold text-dark" id="modalCurrentStock">0</div>
+              </div>
+              <div class="mb-3">
+                <label for="modalNewStock" class="form-label fw-semibold">Nuevo Stock</label>
+                <input type="number" class="form-control form-control-lg" id="modalNewStock" min="0" required placeholder="Ingrese nueva cantidad">
+              </div>
+              <div id="modalAlert" class="alert d-none mt-2" role="alert"></div>
+              <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" id="btnUpdateStock">
+                  <i class="bi bi-check-circle me-1"></i> Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %} 
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  let topProductsChart = null;
+  let categoriesChart = null;
+
+  function loadDashboardData() {
+    document.getElementById('dashboard-loader').style.display = 'flex';
+    
+    fetch('/api/admin/dashboard-ai')
+      .then(res => res.json())
+      .then(data => {
+        // Actualizar KPIs
+        document.getElementById('kpi-ventas').textContent = `$${data.kpis.ventas_totales.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        document.getElementById('kpi-pedidos').textContent = data.kpis.pedidos_hoy;
+        document.getElementById('kpi-productos').textContent = data.kpis.total_productos;
+        document.getElementById('kpi-alertas').textContent = data.kpis.productos_bajo_stock;
+        
+        // Actualizar Resumen IA
+        document.getElementById('ai-summary-text').innerHTML = data.analisis_ia.replace(/\n/g, '<br>');
+        
+        // Renderizar Gráficos
+        renderTopProductsChart(data.graficos.mas_vendidos);
+        renderCategoriesChart(data.graficos.categorias);
+        
+        // Renderizar Tabla Stock
+        renderStockTable(data.alertas_stock);
+        
+        // Ocultar Loader
+        document.getElementById('dashboard-loader').style.display = 'none';
+      })
+      .catch(err => {
+        console.error("Error cargando dashboard:", err);
+        document.getElementById('ai-summary-text').textContent = "Error de conexión al cargar el análisis.";
+        document.getElementById('dashboard-loader').style.display = 'none';
+      });
+  }
+
+  function renderTopProductsChart(datos) {
+    const ctx = document.getElementById('topProductsChart').getContext('2d');
+    
+    if (topProductsChart) topProductsChart.destroy();
+    
+    const labels = datos.map(d => d.nombre.length > 20 ? d.nombre.substring(0, 20)+'...' : d.nombre);
+    const valores = datos.map(d => d.cantidad);
+    
+    // Gradiente para barras
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(13, 110, 253, 0.8)');
+    gradient.addColorStop(1, 'rgba(13, 202, 240, 0.5)');
+
+    topProductsChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Unidades Vendidas',
+          data: valores,
+          backgroundColor: gradient,
+          borderRadius: 8,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderCategoriesChart(datos) {
+    const ctx = document.getElementById('categoriesChart').getContext('2d');
+    
+    if (categoriesChart) categoriesChart.destroy();
+    
+    const labels = datos.map(d => d.nombre);
+    const valores = datos.map(d => d.porcentaje);
+    
+    const colores = [
+      '#6f42c1', '#d63384', '#0dcaf0', '#20c997', '#ffc107', '#fd7e14'
+    ];
+
+    categoriesChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: valores,
+          backgroundColor: colores,
+          borderWidth: 2,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` ${context.label}: ${context.raw}%`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderStockTable(alertas) {
+    const tbody = document.getElementById('stock-table-body');
+    tbody.innerHTML = '';
+    
+    if (alertas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No hay alertas de stock. El inventario está saludable.</td></tr>';
+      return;
+    }
+    
+    alertas.forEach(p => {
+      let badgeColor = p.stock === 0 ? 'bg-danger' : 'bg-warning text-dark';
+      let estadoText = p.stock === 0 ? 'Agotado' : 'Crítico';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="fw-semibold text-dark">${p.nombre}</td>
+        <td><span class="fs-5 fw-bold ${p.stock === 0 ? 'text-danger' : 'text-warning'}">${p.stock}</span> uud.</td>
+        <td>$${p.precio.toFixed(2)}</td>
+        <td><span class="badge ${badgeColor}">${estadoText}</span></td>
+        <td><button class="btn btn-sm btn-outline-primary shadow-sm" onclick="abrirModalStock(${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.stock})"><i class="bi bi-pencil"></i> Reponer</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Cargar datos inicialmente
+  loadDashboardData();
+  
+  // Refrescar al hacer clic
+  document.getElementById('btn-refresh').addEventListener('click', loadDashboardData);
+
+  // Lógica para modal de stock
+  window.abrirModalStock = function(id, nombre, stock) {
+    document.getElementById('modalProductId').value = id;
+    document.getElementById('modalProductName').textContent = nombre;
+    document.getElementById('modalCurrentStock').textContent = stock + ' un.';
+    document.getElementById('modalNewStock').value = '';
+    
+    const alertDiv = document.getElementById('modalAlert');
+    alertDiv.className = 'alert d-none mt-2';
+    
+    const stockModal = new bootstrap.Modal(document.getElementById('stockModal'));
+    stockModal.show();
+  };
+
+  document.getElementById('updateStockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnUpdateStock');
+    const id = document.getElementById('modalProductId').value;
+    const nuevoStock = document.getElementById('modalNewStock').value;
+    const alertDiv = document.getElementById('modalAlert');
+    
+    if (nuevoStock === '' || parseInt(nuevoStock) < 0) {
+        alertDiv.textContent = 'Ingrese un stock válido (mayor o igual a cero).';
+        alertDiv.className = 'alert alert-danger mt-2';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+
+    fetch('/api/admin/update-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ producto_id: id, nuevo_stock: parseInt(nuevoStock) })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Guardar Cambios';
+        
+        if (data.success) {
+            const stockModalEl = document.getElementById('stockModal');
+            const stockModal = bootstrap.Modal.getInstance(stockModalEl);
+            stockModal.hide();
+            
+            loadDashboardData();
+        } else {
+            alertDiv.textContent = data.message || 'Error al actualizar stock.';
+            alertDiv.className = 'alert alert-danger mt-2';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Guardar Cambios';
+        alertDiv.textContent = 'Error de conexión con el servidor.';
+        alertDiv.className = 'alert alert-danger mt-2';
+    });
+  });
+
+});
+</script>
+{% endblock %}

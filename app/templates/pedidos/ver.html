@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido {{ pedido.numero_pedido }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('pedidos.listar') }}">Pedidos</a></li>
+        <li class="breadcrumb-item active">{{ pedido.numero_pedido }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-receipt-cutoff"></i> Venta {{ pedido.numero_pedido }}</h2>
+        <p class="text-muted">Realizado el {{ pedido.fecha_pedido|datetime }}</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <h3>
+            <span class="badge bg-success">
+                <i class="bi bi-check-circle"></i> COMPLETADO
+            </span>
+        </h3>
+
+        <a href="{{ url_for('pedidos.descargar_factura', id=pedido.id) }}"
+           class="btn btn-primary btn-lg mt-2">
+            <i class="bi bi-file-earmark-pdf"></i> Descargar Factura PDF
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información del Pedido -->
+    <div class="col-md-8 mb-4">
+        <!-- Productos del Pedido -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Productos del Pedido</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-end">Precio Unitario</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in pedido.detalles %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if detalle.producto.imagen %}
+                                        <img src="{{ url_for('static', filename=detalle.producto.imagen) }}"
+                                             alt="{{ detalle.producto.nombre }}"
+                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"
+                                             class="me-2">
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ detalle.producto.nombre }}</strong><br>
+                                            <small class="text-muted">SKU: {{ detalle.producto.sku }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end">{{ detalle.precio_unitario|currency }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">{{ detalle.cantidad }}</span>
+                                </td>
+                                <td class="text-end fw-bold">{{ detalle.subtotal|currency }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                <td class="text-end fw-bold">{{ pedido.subtotal|currency }}</td>
+                            </tr>
+                            <tr class="table-success">
+                                <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+                                <td class="text-end fw-bold text-success fs-5">{{ pedido.total|currency }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Venta -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle-fill"></i> Venta Completada</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-check-circle"></i> Tu venta ha sido procesada exitosamente.
+                    Puedes descargar tu factura en formato PDF haciendo clic en el botón de arriba.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de Entrega y Cliente -->
+    <div class="col-md-4">
+        <!-- Cliente -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="bi bi-person"></i> Cliente</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>{{ pedido.cliente.nombre_completo }}</strong></p>
+                <p class="mb-1 small"><i class="bi bi-envelope"></i> {{ pedido.cliente.email }}</p>
+                {% if pedido.telefono_contacto %}
+                <p class="mb-0 small"><i class="bi bi-telephone"></i> {{ pedido.telefono_contacto }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Dirección de Entrega -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Dirección de Entrega</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ pedido.direccion_entrega }}</p>
+            </div>
+        </div>
+
+        <!-- Notas -->
+        {% if pedido.notas %}
+        <div class="card shadow mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-sticky"></i> Notas</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0 small">{{ pedido.notas }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Resumen -->
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Resumen</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td>Número de Pedido:</td>
+                        <td class="text-end"><strong>{{ pedido.numero_pedido }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Fecha:</td>
+                        <td class="text-end">{{ pedido.fecha_pedido|datetime('%d/%m/%Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Estado:</td>
+                        <td class="text-end">
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle"></i> COMPLETADO
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Total Items:</td>
+                        <td class="text-end">{{ pedido.detalles.count() }}</td>
+                    </tr>
+                    <tr class="table-light">
+                        <td><strong>Total:</strong></td>
+                        <td class="text-end"><strong class="text-success">{{ pedido.total|currency }}</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 30px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -29px;
+    top: 30px;
+    width: 2px;
+    height: calc(100% - 30px);
+    background-color: #dee2e6;
+}
+
+.timeline-item.active:not(:last-child)::before {
+    background-color: #198754;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -40px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}

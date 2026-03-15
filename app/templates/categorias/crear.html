@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Categoría{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('categorias.listar') }}">Categorías</a></li>
+        <li class="breadcrumb-item active">Crear</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Crear Nueva Categoría</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('categorias.crear') }}">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">
+                            <i class="bi bi-tag"></i> Nombre de la Categoría *
+                        </label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required autofocus>
+                        <div class="form-text">Mínimo 3 caracteres. Ejemplo: "Rosas", "Plantas de Interior"</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">
+                            <i class="bi bi-text-paragraph"></i> Descripción
+                        </label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="4" maxlength="500"></textarea>
+                        <div class="form-text">Describe esta categoría (máximo 500 caracteres)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
+                            <label class="form-check-label" for="activo">
+                                <i class="bi bi-toggle-on"></i> Categoría activa
+                            </label>
+                        </div>
+                        <div class="form-text">Las categorías inactivas no se mostrarán en el catálogo público</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Nota:</strong> El slug se generará automáticamente a partir del nombre.
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('categorias.listar') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Crear Categoría
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ayuda -->
+        <div class="card shadow mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-lightbulb"></i> Consejos</h6>
+                <ul class="small text-muted mb-0">
+                    <li>Usa nombres descriptivos y únicos para cada categoría</li>
+                    <li>La descripción ayuda a los clientes a entender qué productos encontrarán</li>
+                    <li>Puedes desactivar temporalmente una categoría sin eliminarla</li>
+                    <li>El slug es la versión URL-friendly del nombre (se genera automáticamente)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

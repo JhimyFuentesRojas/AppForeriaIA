@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Pedido{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('pedidos.listar') }}">Pedidos</a></li>
+        <li class="breadcrumb-item active">Crear</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2><i class="bi bi-plus-circle"></i> Crear Nuevo Pedido</h2>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('pedidos.crear') }}" id="pedidoForm">
+    <div class="row">
+        <!-- Selección de Productos -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-cart"></i> Productos del Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <div id="productosContainer">
+                        <div class="producto-item mb-3 p-3 border rounded" data-index="0">
+                            <div class="row">
+                                <div class="col-md-8 mb-2">
+                                    <label class="form-label">Producto *</label>
+                                    <select class="form-select producto-select" name="productos[]" required>
+                                        <option value="">Selecciona un producto</option>
+                                        {% for producto in productos %}
+                                        <option value="{{ producto.id }}"
+                                                data-precio="{{ producto.precio }}"
+                                                data-stock="{{ producto.stock }}"
+                                                data-nombre="{{ producto.nombre }}">
+                                            {{ producto.nombre }} - {{ producto.precio|currency }} (Stock: {{ producto.stock }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3 mb-2">
+                                    <label class="form-label">Cantidad *</label>
+                                    <input type="number" class="form-control cantidad-input" name="cantidades[]"
+                                           min="1" value="1" required>
+                                    <small class="text-muted stock-info"></small>
+                                </div>
+
+                                <div class="col-md-1 mb-2 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm remove-producto" style="display: none;">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="subtotal-display text-end">
+                                        <strong>Subtotal:</strong> <span class="subtotal-value">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-success" id="addProducto">
+                        <i class="bi bi-plus-circle"></i> Agregar Otro Producto
+                    </button>
+
+                    <hr>
+
+                    <div class="text-end">
+                        <h4>Total: <span id="totalPedido" class="text-success">$0.00</span></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Entrega -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Información de Entrega</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="direccion_entrega" class="form-label">Dirección de Entrega *</label>
+                        <textarea class="form-control" id="direccion_entrega" name="direccion_entrega"
+                                  rows="3" required>{{ current_user.direccion or '' }}</textarea>
+                        <div class="form-text">Mínimo 10 caracteres</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="telefono_contacto" class="form-label">Teléfono de Contacto *</label>
+                        <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto"
+                               value="{{ current_user.telefono or '' }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notas" class="form-label">Notas (Opcional)</label>
+                        <textarea class="form-control" id="notas" name="notas" rows="3" maxlength="1000"></textarea>
+                        <div class="form-text">Instrucciones especiales de entrega</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Importante:</strong>
+                        <ul class="mb-0 mt-2 small">
+                            <li>Verifica que todos los productos tengan stock disponible</li>
+                            <li>El stock se descontará al crear el pedido</li>
+                            <li>Puedes cancelar el pedido mientras esté en estado "Pendiente"</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Crear Pedido
+                        </button>
+                        <a href="{{ url_for('pedidos.listar') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let productoIndex = 1;
+
+// Agregar nuevo producto
+document.getElementById('addProducto').addEventListener('click', function() {
+    const container = document.getElementById('productosContainer');
+    const newItem = document.querySelector('.producto-item').cloneNode(true);
+
+    newItem.dataset.index = productoIndex++;
+    newItem.querySelector('.producto-select').value = '';
+    newItem.querySelector('.cantidad-input').value = 1;
+    newItem.querySelector('.subtotal-value').textContent = '$0.00';
+    newItem.querySelector('.stock-info').textContent = '';
+    newItem.querySelector('.remove-producto').style.display = 'block';
+
+    container.appendChild(newItem);
+    updateRemoveButtons();
+    calcularTotal();
+});
+
+// Eliminar producto
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-producto')) {
+        e.target.closest('.producto-item').remove();
+        updateRemoveButtons();
+        calcularTotal();
+    }
+});
+
+// Actualizar botones de eliminar
+function updateRemoveButtons() {
+    const items = document.querySelectorAll('.producto-item');
+    items.forEach((item, index) => {
+        const removeBtn = item.querySelector('.remove-producto');
+        if (items.length > 1) {
+            removeBtn.style.display = 'block';
+        } else {
+            removeBtn.style.display = 'none';
+        }
+    });
+}
+
+// Calcular subtotal de un producto
+function calcularSubtotal(item) {
+    const select = item.querySelector('.producto-select');
+    const cantidadInput = item.querySelector('.cantidad-input');
+    const subtotalSpan = item.querySelector('.subtotal-value');
+    const stockInfo = item.querySelector('.stock-info');
+
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption.value) {
+        const precio = parseFloat(selectedOption.dataset.precio);
+        const stock = parseInt(selectedOption.dataset.stock);
+        const cantidad = parseInt(cantidadInput.value) || 0;
+
+        // Validar stock
+        if (cantidad > stock) {
+            cantidadInput.value = stock;
+            alert(`Stock insuficiente. Máximo disponible: ${stock}`);
+            return;
+        }
+
+        const subtotal = precio * cantidad;
+        subtotalSpan.textContent = `$${subtotal.toFixed(2)}`;
+        stockInfo.textContent = `Disponible: ${stock}`;
+    } else {
+        subtotalSpan.textContent = '$0.00';
+        stockInfo.textContent = '';
+    }
+
+    calcularTotal();
+}
+
+// Calcular total del pedido
+function calcularTotal() {
+    let total = 0;
+    document.querySelectorAll('.producto-item').forEach(item => {
+        const select = item.querySelector('.producto-select');
+        const cantidadInput = item.querySelector('.cantidad-input');
+
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption.value) {
+            const precio = parseFloat(selectedOption.dataset.precio);
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            total += precio * cantidad;
+        }
+    });
+
+    document.getElementById('totalPedido').textContent = `$${total.toFixed(2)}`;
+}
+
+// Event listeners para cambios
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('producto-select') || e.target.classList.contains('cantidad-input')) {
+        const item = e.target.closest('.producto-item');
+        calcularSubtotal(item);
+    }
+});
+
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('cantidad-input')) {
+        const item = e.target.closest('.producto-item');
+        calcularSubtotal(item);
+    }
+});
+
+// Validación al enviar
+document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+    const items = document.querySelectorAll('.producto-item');
+    let valid = true;
+
+    // Validar que al menos haya un producto
+    if (items.length === 0) {
+        alert('Debe agregar al menos un producto al pedido');
+        e.preventDefault();
+        return;
+    }
+
+    // Validar cada producto
+    items.forEach(item => {
+        const select = item.querySelector('.producto-select');
+        const cantidad = item.querySelector('.cantidad-input');
+
+        if (!select.value) {
+            alert('Por favor selecciona un producto');
+            valid = false;
+        }
+
+        if (!cantidad.value || cantidad.value < 1) {
+            alert('La cantidad debe ser mayor a 0');
+            valid = false;
+        }
+    });
+
+    if (!valid) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

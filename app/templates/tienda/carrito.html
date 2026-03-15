@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% block title %}Carrito de Compras{% endblock %}
+{% block extra_css %}
+<style>
+  .cart-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .cart-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s;
+  }
+
+  .cart-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .cart-item-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .cart-item-info {
+    flex: 1;
+  }
+
+  .cart-item-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+  }
+
+  .cart-item-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: #198754;
+    margin-bottom: 10px;
+  }
+
+  .quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .quantity-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #198754;
+    background: white;
+    color: #198754;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+
+  .quantity-btn:hover {
+    background: #198754;
+    color: white;
+  }
+
+  .quantity-input {
+    width: 60px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+  }
+
+  .cart-item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .cart-item-subtotal {
+    font-size: 22px;
+    font-weight: 700;
+    color: #198754;
+  }
+
+  .btn-remove {
+    color: #dc3545;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-remove:hover {
+    color: #bb2d3b;
+    text-decoration: underline;
+  }
+
+  .cart-summary {
+    background: #fff;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 20px;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .summary-row:last-child {
+    border-bottom: none;
+    padding-top: 15px;
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .empty-cart {
+    text-align: center;
+    padding: 80px 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .empty-cart i {
+    font-size: 80px;
+    color: #ddd;
+    margin-bottom: 20px;
+  }
+
+  .stock-warning {
+    font-size: 12px;
+    color: #dc3545;
+    margin-top: 5px;
+  }
+
+  .stock-ok {
+    font-size: 12px;
+    color: #198754;
+    margin-top: 5px;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('main.index') }}">Inicio</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('tienda.index') }}">Tienda</a>
+    </li>
+    <li class="breadcrumb-item active">Carrito</li>
+  </ol>
+</nav>
+
+<div class="cart-container">
+  <h2 class="mb-4"><i class="bi bi-cart3"></i> Mi Carrito de Compras</h2>
+
+  {% if items %}
+  <div class="row">
+    <!-- Cart Items -->
+    <div class="col-lg-8">
+      {% for item in items %}
+      <div class="cart-item" data-producto-id="{{ item.producto_id }}">
+        <!-- Image -->
+        {% if item.imagen %}
+        <img
+          src="{{ url_for('static', filename=item.imagen) }}"
+          alt="{{ item.nombre }}"
+          class="cart-item-image"
+        />
+        {% else %}
+        <div
+          class="cart-item-image d-flex align-items-center justify-content-center bg-light"
+        >
+          <i class="bi bi-flower1 text-muted" style="font-size: 48px"></i>
+        </div>
+        {% endif %}
+
+        <!-- Info -->
+        <div class="cart-item-info">
+          <div class="cart-item-name">{{ item.nombre }}</div>
+          <div class="cart-item-price">{{ item.precio|currency }} c/u</div>
+
+          <!-- Quantity Controls -->
+          <div class="quantity-controls">
+            <button
+              class="quantity-btn"
+              onclick="updateQuantity({{ item.producto_id }}, {{ item.cantidad - 1 }})"
+            >
+              <i class="bi bi-dash"></i>
+            </button>
+            <input
+              type="number"
+              class="quantity-input"
+              value="{{ item.cantidad }}"
+              min="1"
+              max="{{ item.stock_actual }}"
+              onchange="updateQuantity({{ item.producto_id }}, this.value)"
+            />
+            <button
+              class="quantity-btn"
+              onclick="updateQuantity({{ item.producto_id }}, {{ item.cantidad + 1 }})"
+            >
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+
+          {% if item.cantidad > item.stock_actual %}
+          <div class="stock-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            Stock insuficiente. Disponible: {{ item.stock_actual }}
+          </div>
+          {% else %}
+          <div class="stock-ok">
+            <i class="bi bi-check-circle"></i>
+            Stock disponible: {{ item.stock_actual }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Actions & Subtotal -->
+        <div class="cart-item-actions">
+          <div class="cart-item-subtotal" data-subtotal="{{ item.subtotal }}">
+            {{ item.subtotal|currency }}
+          </div>
+          <button type="button" class="btn btn-link btn-remove p-0" onclick="removeFromCart({{ item.producto_id }})">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Clear Cart -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <a href="{{ url_for('tienda.index') }}" class="btn btn-outline-success">
+          <i class="bi bi-arrow-left"></i> Seguir comprando
+        </a>
+        <form
+          action="{{ url_for('tienda.vaciar_carrito') }}"
+          method="POST"
+          onsubmit="return confirm('¿Estás seguro de vaciar el carrito?');"
+        >
+          <button type="submit" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Vaciar carrito
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="col-lg-4">
+      <div class="cart-summary">
+        <h5 class="mb-3"><i class="bi bi-receipt"></i> Resumen del Pedido</h5>
+
+        <div class="summary-row">
+          <span>Subtotal:</span>
+          <span id="cart-subtotal">{{ subtotal|currency }}</span>
+        </div>
+
+        <div class="summary-row">
+          <strong>Total:</strong>
+          <strong id="cart-total" class="text-success"
+            >{{ total|currency }}</strong
+          >
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <a
+          href="{{ url_for('tienda.checkout') }}"
+          class="btn btn-success btn-lg w-100 mt-3"
+        >
+          <i class="bi bi-check-circle"></i> Proceder al Pago
+        </a>
+        {% else %}
+        <div class="alert alert-info mt-3">
+          <i class="bi bi-info-circle"></i>
+          Debes <a href="{{ url_for('auth.login') }}">iniciar sesión</a> para
+          finalizar la compra
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-3">
+          <small class="text-muted">
+            <i class="bi bi-shield-check"></i> Compra 100% segura
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-cart">
+    <i class="bi bi-cart-x"></i>
+    <h3>Tu carrito está vacío</h3>
+    <p class="text-muted">Agrega productos para comenzar tu compra</p>
+    <a href="{{ url_for('tienda.index') }}" class="btn btn-success btn-lg mt-3">
+      <i class="bi bi-shop"></i> Ir a la Tienda
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function updateQuantity(productoId, nuevaCantidad) {
+    if (nuevaCantidad < 1) {
+      if (confirm("¿Deseas eliminar este producto del carrito?")) {
+        removeFromCart(productoId);
+      }
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("cantidad", nuevaCantidad);
+
+    fetch(
+      `{{ url_for('tienda.actualizar_carrito', producto_id=0) }}`.replace(
+        "/0",
+        `/${productoId}`,
+      ),
+      {
+        method: "POST",
+        body: formData,
+      },
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          if (data.deleted) {
+             const cartItem = document.querySelector(`[data-producto-id="${productoId}"]`);
+             if (cartItem) cartItem.remove();
+          } else {
+             // Actualizar subtotal del item
+             const cartItem = document.querySelector(
+               `[data-producto-id="${productoId}"]`,
+             );
+             const subtotalElement = cartItem.querySelector("[data-subtotal]");
+             subtotalElement.textContent = data.item_subtotal;
+             subtotalElement.dataset.subtotal = parseFloat(
+               data.item_subtotal.replace("$", "").replace(",", ""),
+             );
+
+             // Actualizar input de cantidad
+             const quantityInput = cartItem.querySelector(".quantity-input");
+             quantityInput.value = nuevaCantidad;
+          }
+
+          // Actualizar totales y headers
+           document.getElementById("cart-subtotal").textContent =
+            data.total_carrito;
+          document.getElementById("cart-total").textContent =
+            data.total_carrito;
+
+          if (typeof updateCartCount === "function") {
+             updateCartCount(data.items_carrito);
+          } else if (typeof window.updateCartBadge === "function") {
+             window.updateCartBadge();
+          }
+
+          showNotification(data.message || "Cantidad actualizada", "success");
+          
+          if (data.items_carrito === 0) {
+              window.location.reload();
+          }
+        } else {
+          showNotification(data.message, "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showNotification("Error al actualizar cantidad", "error");
+      });
+  }
+
+  function removeFromCart(productoId) {
+    fetch(
+      `{{ url_for('tienda.eliminar_carrito', producto_id=0) }}`.replace(
+        "/0",
+        `/${productoId}`,
+      ),
+      {
+        method: "POST",
+        headers: {
+            'Accept': 'application/json'
+        }
+      },
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          const cartItem = document.querySelector(`[data-producto-id="${productoId}"]`);
+          if (cartItem) cartItem.remove();
+          
+          document.getElementById("cart-subtotal").textContent = data.total_carrito;
+          document.getElementById("cart-total").textContent = data.total_carrito;
+          
+          if (typeof updateCartCount === "function") {
+             updateCartCount(data.items_carrito);
+          } else if (typeof window.updateCartBadge === "function") {
+             window.updateCartBadge();
+          }
+
+          showNotification("Producto eliminado del carrito", "success");
+          
+          if (data.items_carrito === 0) {
+              window.location.reload();
+          }
+        } else {
+          showNotification(data.message, "error");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showNotification("Error al eliminar el producto", "error");
+      });
+  }
+
+  function showNotification(message, type) {
+    const alertClass = type === "success" ? "alert-success" : "alert-danger";
+    const icon = type === "success" ? "check-circle" : "exclamation-circle";
+
+    const notification = document.createElement("div");
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText =
+      "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    notification.innerHTML = `
+        <i class="bi bi-${icon}"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Finalizar Compra{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkout-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .checkout-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #198754;
+        color: #198754;
+    }
+
+    .order-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-item:last-child {
+        border-bottom: none;
+    }
+
+    .order-item-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    .order-item-info {
+        flex: 1;
+    }
+
+    .order-item-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .order-item-details {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .order-item-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #198754;
+        text-align: right;
+    }
+
+    .order-summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-summary-row:last-child {
+        border-bottom: none;
+        border-top: 2px solid #198754;
+        margin-top: 10px;
+        padding-top: 15px;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .user-info-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+
+    .user-info-box strong {
+        color: #198754;
+    }
+
+    .security-badge {
+        text-align: center;
+        padding: 20px;
+        background: #f0f8f5;
+        border-radius: 6px;
+        margin-top: 20px;
+    }
+
+    .security-badge i {
+        font-size: 32px;
+        color: #198754;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('tienda.index') }}">Tienda</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('tienda.ver_carrito') }}">Carrito</a></li>
+        <li class="breadcrumb-item active">Checkout</li>
+    </ol>
+</nav>
+
+<div class="checkout-container">
+    <h2 class="mb-4"><i class="bi bi-credit-card"></i> Finalizar Compra</h2>
+
+    <form action="{{ url_for('tienda.procesar_compra') }}" method="POST" id="checkoutForm">
+        <div class="row">
+            <!-- Delivery Information -->
+            <div class="col-lg-8">
+                <!-- Usuario Info -->
+                <div class="checkout-section">
+                    <div class="section-title">
+                        <i class="bi bi-person-circle"></i> Información del Cliente
+                    </div>
+
+                    <div class="user-info-box">
+                        <p class="mb-2"><strong>Nombre:</strong> {{ usuario.nombre }} {{ usuario.apellido }}</p>
+                        <p class="mb-2"><strong>Email:</strong> {{ usuario.email }}</p>
+                        <p class="mb-0"><strong>Usuario:</strong> {{ usuario.username }}</p>
+                    </div>
+
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle"></i>
+                        Si necesitas actualizar tu información,
+                        <a href="{{ url_for('auth.editar_perfil') }}">edita tu perfil</a>.
+                    </p>
+                </div>
+
+                <!-- Delivery Address -->
+                <div class="checkout-section">
+                    <div class="section-title">
+                        <i class="bi bi-geo-alt"></i> Dirección de Entrega
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="direccion_entrega" class="form-label">
+                            Dirección completa *
+                        </label>
+                        <textarea class="form-control" id="direccion_entrega" name="direccion_entrega"
+                                  rows="3" required
+                                  placeholder="Calle, número, colonia, ciudad, código postal..."></textarea>
+                        <div class="form-text">
+                            Proporciona una dirección completa para la entrega de tu pedido
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="telefono_contacto" class="form-label">
+                            Teléfono de contacto *
+                        </label>
+                        <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto"
+                               required placeholder="+52 123 456 7890">
+                        <div class="form-text">
+                            Para coordinar la entrega
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notas" class="form-label">
+                            Notas adicionales (opcional)
+                        </label>
+                        <textarea class="form-control" id="notas" name="notas"
+                                  rows="3"
+                                  placeholder="Referencias, instrucciones especiales, horarios preferidos..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="checkout-section">
+                    <div class="section-title">
+                        <i class="bi bi-receipt"></i> Resumen del Pedido
+                    </div>
+
+                    <!-- Items -->
+                    <div class="mb-3">
+                        {% for item in items %}
+                        <div class="order-item">
+                            {% if item.imagen %}
+                            <img src="{{ url_for('static', filename=item.imagen) }}"
+                                 alt="{{ item.nombre }}" class="order-item-image">
+                            {% else %}
+                            <div class="order-item-image d-flex align-items-center justify-content-center bg-light">
+                                <i class="bi bi-flower1 text-muted" style="font-size: 32px;"></i>
+                            </div>
+                            {% endif %}
+
+                            <div class="order-item-info">
+                                <div class="order-item-name">{{ item.nombre }}</div>
+                                <div class="order-item-details">
+                                    {{ item.precio|currency }} x {{ item.cantidad }}
+                                </div>
+                            </div>
+
+                            <div class="order-item-price">
+                                {{ item.subtotal|currency }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="order-summary-row">
+                        <span>Subtotal:</span>
+                        <span>{{ subtotal|currency }}</span>
+                    </div>
+
+                    <div class="order-summary-row">
+                        <span>Envío:</span>
+                        <span class="text-success">Gratis</span>
+                    </div>
+
+                    <div class="order-summary-row">
+                        <strong>Total a Pagar:</strong>
+                        <strong class="text-success">{{ total|currency }}</strong>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-success btn-lg w-100 mt-3">
+                        <i class="bi bi-check-circle"></i> Confirmar Pedido
+                    </button>
+
+                    <a href="{{ url_for('tienda.ver_carrito') }}" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="bi bi-arrow-left"></i> Volver al Carrito
+                    </a>
+
+                    <!-- Security Badge -->
+                    <div class="security-badge">
+                        <i class="bi bi-shield-check"></i>
+                        <div><strong>Compra Segura</strong></div>
+                        <small class="text-muted">
+                            Tus datos están protegidos
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación del formulario y envío AJAX
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const direccion = document.getElementById('direccion_entrega').value.trim();
+    const telefono = document.getElementById('telefono_contacto').value.trim();
+    const notas = document.getElementById('notas').value.trim();
+    const submitBtn = this.querySelector('button[type="submit"]');
+
+    if (!direccion || direccion.length < 10) {
+        alert('Por favor proporciona una dirección completa (mínimo 10 caracteres)');
+        return;
+    }
+
+    if (!telefono || telefono.length < 8) {
+        alert('Por favor proporciona un teléfono válido (mínimo 8 caracteres)');
+        return;
+    }
+
+    // Confirmar antes de enviar
+    if (!confirm('¿Confirmas que deseas realizar este pedido?')) {
+        return;
+    }
+
+    // Preparar formData
+    const formData = new FormData();
+    formData.append('direccion_entrega', direccion);
+    formData.append('telefono_contacto', telefono);
+    formData.append('notas', notas);
+
+    // Estado de carga
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando pedido...';
+
+    // Enviar por fetch
+    fetch("{{ url_for('tienda.procesar_compra') }}", {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok && response.status !== 400 && response.status !== 500) {
+            throw new Error('Error en la respuesta del servidor');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Mostrar modal o simplemente redirigir de inmediato a procesando_pago
+            window.location.href = data.redirect_url;
+        } else {
+            // Mostrar mensaje de error (stock, etc)
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        alert('Ocurrió un error al procesar el pedido. Por favor intente de nuevo.');
+    });
+});
+</script>
+{% endblock %}

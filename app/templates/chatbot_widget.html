@@ -1,0 +1,529 @@
+<!-- Chatbot Flotante Widget -->
+<style>
+  .chatbot-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .chatbot-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    font-size: 24px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chatbot-btn:hover {
+    transform: scale(1.1);
+  }
+
+  .chatbot-panel {
+    display: none;
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 450px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chatbot-header {
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chatbot-header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .chatbot-header .badge {
+    font-size: 10px;
+    background-color: rgba(255,255,255,0.3);
+  }
+
+  .chatbot-header-controls button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+
+  .chatbot-header-controls button:hover {
+    opacity: 1;
+  }
+
+  .chatbot-body {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .chat-msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    word-wrap: break-word;
+  }
+
+  .msg-ai {
+    background-color: white;
+    color: #333;
+    border: 1px solid #e9ecef;
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .msg-user {
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
+    box-shadow: 0 1px 2px rgba(25,135,84,0.3);
+  }
+
+  .chatbot-input-area {
+    padding: 12px;
+    background: white;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 8px;
+  }
+
+  .chatbot-input {
+    flex: 1;
+    border: 1px solid #ced4da;
+    border-radius: 20px;
+    padding: 8px 15px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .chatbot-input:focus {
+    border-color: #198754;
+  }
+
+  .chatbot-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #198754;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .chatbot-send:hover {
+    background-color: #146c43;
+  }
+
+  .typing-indicator {
+    display: none;
+    padding: 10px 14px;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+    width: fit-content;
+  }
+
+  .typing-indicator span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: #adb5bd;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: typing 1.4s infinite ease-in-out both;
+  }
+
+  .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+  .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  /* Product Card Styles */
+  .chatbot-product-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .chatbot-product-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+  }
+  .chatbot-product-info {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.2;
+  }
+  .chatbot-product-price {
+    font-weight: bold;
+    color: #198754;
+  }
+  .chatbot-btn-cart {
+    background-color: #198754;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .chatbot-btn-cart:hover {
+    background-color: #146c43;
+  }
+  
+  .chat-msg-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  @media (max-width: 576px) {
+    .chatbot-panel {
+      width: calc(100vw - 40px);
+      height: 60vh;
+    }
+  }
+</style>
+
+<div class="chatbot-widget-container" id="chatbot-widget">
+  <div class="chatbot-panel" id="chatbot-panel">
+    <div class="chatbot-header">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-robot fs-5"></i>
+        <div>
+            <h5>Asistente Virtual</h5>
+            <span class="badge" id="chatbot-mode-badge">
+              {% if current_user.is_authenticated and current_user.is_admin() %}
+                Modo Admin
+              {% else %}
+                Modo Cliente
+              {% endif %}
+            </span>
+        </div>
+      </div>
+      <div class="chatbot-header-controls">
+        <button id="chatbot-close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    
+    <div class="chatbot-body" id="chatbot-body">
+      <div class="chat-msg msg-ai">
+        {% if current_user.is_authenticated and current_user.is_admin() %}
+          Hola <strong>{{ current_user.username }}</strong>. Soy tu asistente de inteligencia artificial administrativa. Puedo ayudarte analizando las ventas, mostrándote alertas de stock o dándote estadísticas. ¿En qué puedo ayudarte?
+        {% else %}
+          ¡Hola! Soy el asistente virtual de la florería 🌸. Estoy aquí para ayudarte a elegir el arreglo perfecto o responder tus dudas sobre nuestros productos. ¿Qué estás buscando hoy?
+        {% endif %}
+      </div>
+      
+      <div class="typing-indicator" id="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    
+    <div class="chatbot-input-area">
+      <input type="text" id="chatbot-input" class="chatbot-input" placeholder="Escribe tu mensaje..." autocomplete="off">
+      <button id="chatbot-send" class="chatbot-send"><i class="bi bi-send-fill fs-6"></i></button>
+    </div>
+  </div>
+  
+  <button class="chatbot-btn" id="chatbot-toggle">
+    <i class="bi bi-chat-dots-fill"></i>
+  </button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleBtn = document.getElementById('chatbot-toggle');
+  const panel = document.getElementById('chatbot-panel');
+  const closeBtn = document.getElementById('chatbot-close');
+  const inputEl = document.getElementById('chatbot-input');
+  const sendBtn = document.getElementById('chatbot-send');
+  const bodyEl = document.getElementById('chatbot-body');
+  const typingIndicator = document.getElementById('typing-indicator');
+  
+  let chatHistory = [];
+  let historyLoaded = false;
+  
+  // URL según rol
+  {% if current_user.is_authenticated and current_user.is_admin() %}
+    const apiEndpoint = '/api/admin/chatbot';
+    const tipoChat = 'admin';
+  {% else %}
+    const apiEndpoint = '/api/chatbot';
+    const tipoChat = 'cliente';
+  {% endif %}
+
+  // Cargar historial
+  function loadHistory() {
+    if(historyLoaded) return;
+    fetch(`/api/chatbot/history?tipo=${tipoChat}`)
+      .then(res => res.json())
+      .then(data => {
+        if(data && Array.isArray(data)) {
+            // Eliminar welcome message if there is history
+            if(data.length > 0) {
+               const welcomeMsg = bodyEl.querySelector('.msg-ai');
+               if(welcomeMsg) welcomeMsg.remove();
+            }
+            
+            data.forEach(msg => {
+                if(msg.role === 'user') {
+                    appendMessage(msg.content, 'user');
+                } else if(msg.role === 'assistant') {
+                    try {
+                        const parsedObj = JSON.parse(msg.content);
+                        appendStructuredMessage(parsedObj, 'ai');
+                    } catch(e) {
+                        appendMessage(msg.content, 'ai');
+                    }
+                }
+            });
+            chatHistory = data.slice(-10); // keep last interactions
+        }
+        historyLoaded = true;
+      })
+      .catch(err => console.error("Error loading chat history:", err));
+  }
+
+  // Alternar panel
+  toggleBtn.addEventListener('click', () => {
+    panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+    if(panel.style.display === 'flex') {
+        inputEl.focus();
+        loadHistory();
+        scrollToBottom();
+    }
+  });
+  
+  closeBtn.addEventListener('click', () => {
+    panel.style.display = 'none';
+  });
+
+  function scrollToBottom() {
+      // Usar requestAnimationFrame asegura que el scroll pase luego del redibujado
+      requestAnimationFrame(() => {
+          bodyEl.scrollTop = bodyEl.scrollHeight;
+      });
+  }
+
+  // Enviar mensaje
+  function sendMessage() {
+    const text = inputEl.value.trim();
+    if(!text) return;
+    
+    // Agregar msg usuario
+    appendMessage(text, 'user');
+    inputEl.value = '';
+    
+    // Mostrar que está "pensando"
+    typingIndicator.style.display = 'block';
+    scrollToBottom();
+    
+    // Limpiar historial si sobrepasa para no agotar tokens
+    // Transformamos historial para enviarlo al modelo en un formato simple
+    const historyForModel = chatHistory.map(m => {
+        // if assistant msg is object, pass string version back
+        let contentStr = typeof m.content === 'object' ? JSON.stringify(m.content) : m.content;
+        return { role: m.role, content: contentStr };
+    });
+    
+    const payload = { 
+      pregunta: text,
+      historial: historyForModel
+    };
+    
+    // Agregar al local
+    chatHistory.push({ role: 'user', content: text });
+    if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+    fetch(apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if(!response.ok) throw new Error('Error en la respuesta del servidor');
+      return response.json();
+    })
+    .then(data => {
+      typingIndicator.style.display = 'none';
+      if(data.error) {
+        appendMessage('Lo siento, ocurrió un error: ' + data.error, 'ai');
+      } else {
+        const aiResponse = data.respuesta;
+        if(typeof aiResponse === 'object' && aiResponse !== null) {
+            appendStructuredMessage(aiResponse, 'ai');
+            chatHistory.push({ role: 'assistant', content: aiResponse });
+        } else {
+            appendMessage(aiResponse, 'ai');
+            chatHistory.push({ role: 'assistant', content: aiResponse });
+        }
+      }
+      scrollToBottom();
+    })
+    .catch(err => {
+      typingIndicator.style.display = 'none';
+      appendMessage('No pude conectar con el servidor. ¿Tal vez necesitas iniciar sesión?', 'ai');
+      console.error(err);
+      scrollToBottom();
+    });
+  }
+
+  function appendMessage(text, sender) {
+    const formattedText = text
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      
+    const div = document.createElement('div');
+    div.className = `chat-msg msg-${sender}`;
+    div.innerHTML = formattedText;
+    
+    bodyEl.insertBefore(div, typingIndicator);
+    scrollToBottom();
+  }
+  
+  function appendStructuredMessage(responseObj, sender) {
+      const container = document.createElement('div');
+      container.className = `chat-msg-container`;
+      
+      const msgText = responseObj.mensaje || "";
+      const formattedText = msgText
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+      const textDiv = document.createElement('div');
+      textDiv.className = `chat-msg msg-${sender}`;
+      textDiv.innerHTML = formattedText;
+      container.appendChild(textDiv);
+      
+      if(responseObj.productos && Array.isArray(responseObj.productos)) {
+          responseObj.productos.forEach(prod => {
+              const cardDiv = document.createElement('div');
+              cardDiv.className = `chatbot-product-card msg-${sender}`;
+              
+              const imgUrl = prod.imagen && prod.imagen !== '' && !prod.imagen.includes('default') ? prod.imagen : 'https://placehold.co/300x200/e9ecef/495057?text=Floreria';
+              
+              cardDiv.innerHTML = `
+                <img src="${imgUrl}" class="chatbot-product-img" alt="${prod.nombre}" onerror="this.src='https://placehold.co/300x200/e9ecef/495057?text=Floreria'">
+                <div class="chatbot-product-info">
+                  <strong>${prod.nombre}</strong><br>
+                  <span class="chatbot-product-price">${prod.precio} Bs.</span><br>
+                  <small class="text-muted">Disp: ${prod.stock} un.</small>
+                </div>
+                <button class="chatbot-btn-cart" data-id="${prod.id}">Añadir al carrito <i class="bi bi-cart-plus"></i></button>
+              `;
+              
+              const btnCart = cardDiv.querySelector('.chatbot-btn-cart');
+              btnCart.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  addToCart(prod.id, btnCart);
+              });
+              
+              container.appendChild(cardDiv);
+          });
+      }
+      
+      bodyEl.insertBefore(container, typingIndicator);
+      scrollToBottom();
+  }
+  
+  function addToCart(productoId, btnElement) {
+      btnElement.disabled = true;
+      btnElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Añadiendo...';
+      
+      fetch('/api/chatbot/add-to-cart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ producto_id: productoId, cantidad: 1 })
+      })
+      .then(r => r.json())
+      .then(data => {
+          if(data.success) {
+              btnElement.innerHTML = '<i class="bi bi-check-circle"></i> Añadido';
+              btnElement.style.backgroundColor = '#198754';
+              // Trigger cart update event globally if needed
+              if(window.updateCartBadge) window.updateCartBadge();
+          } else {
+              btnElement.innerHTML = 'Error';
+              btnElement.style.backgroundColor = '#dc3545';
+              appendMessage(data.message || "Error al añadir", "ai");
+          }
+      })
+      .catch(err => {
+          btnElement.innerHTML = 'Error';
+          btnElement.style.backgroundColor = '#dc3545';
+          console.error(err);
+      });
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  inputEl.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter') sendMessage();
+  });
+});
+</script>

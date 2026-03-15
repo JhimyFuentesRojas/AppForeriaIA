@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Producto{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('productos.listar') }}">Productos</a></li>
+        <li class="breadcrumb-item active">Crear</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Crear Nuevo Producto</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('productos.crear') }}" enctype="multipart/form-data">
+                    <div class="row">
+                        <!-- Información Básica -->
+                        <div class="col-md-8">
+                            <h5 class="mb-3"><i class="bi bi-info-circle"></i> Información Básica</h5>
+
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">
+                                    <i class="bi bi-flower1"></i> Nombre del Producto *
+                                </label>
+                                <input type="text" class="form-control" id="nombre" name="nombre"
+                                       value="{{ form_data.nombre if form_data else '' }}" required autofocus>
+                                <div class="form-text">Mínimo 3 caracteres</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="descripcion" class="form-label">
+                                    <i class="bi bi-text-paragraph"></i> Descripción
+                                </label>
+                                <textarea class="form-control" id="descripcion" name="descripcion" rows="4" maxlength="1000"></textarea>
+                                <div class="form-text">Describe las características del producto (máximo 1000 caracteres)</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="categoria_id" class="form-label">
+                                        <i class="bi bi-tag"></i> Categoría *
+                                    </label>
+                                    <select class="form-select" id="categoria_id" name="categoria_id" required>
+                                        <option value="">Selecciona una categoría</option>
+                                        {% for categoria in categorias %}
+                                        <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="sku" class="form-label">
+                                        <i class="bi bi-upc"></i> SKU (Opcional)
+                                    </label>
+                                    <input type="text" class="form-control" id="sku" name="sku">
+                                    <div class="form-text">Si está vacío, se generará automáticamente</div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="precio" class="form-label">
+                                        <i class="bi bi-cash"></i> Precio *
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="precio" name="precio"
+                                               step="0.01" min="0.01" max="9999999.99" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="stock" class="form-label">
+                                        <i class="bi bi-box"></i> Stock Inicial *
+                                    </label>
+                                    <input type="number" class="form-control" id="stock" name="stock"
+                                           min="0" max="999999" value="0" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
+                                    <label class="form-check-label" for="activo">
+                                        <i class="bi bi-toggle-on"></i> Producto activo
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="destacado" name="destacado">
+                                    <label class="form-check-label" for="destacado">
+                                        <i class="bi bi-star"></i> Marcar como destacado
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subida de Imagen (RETO ADICIONAL) -->
+                        <div class="col-md-4">
+                            <h5 class="mb-3"><i class="bi bi-image"></i> Imagen del Producto</h5>
+
+                            <div class="mb-3">
+                                <label for="imagen" class="form-label">
+                                    Subir Imagen
+                                </label>
+                                <input type="file" class="form-control" id="imagen" name="imagen"
+                                       accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                                       onchange="previewImage(event)">
+                                <div class="form-text">
+                                    <strong>Formatos:</strong> PNG, JPG, JPEG, GIF, WEBP<br>
+                                    <strong>Tamaño máximo:</strong> 16 MB<br>
+                                    <strong>Recomendado:</strong> 1200x1200px o superior
+                                </div>
+                            </div>
+
+                            <!-- Preview de la imagen -->
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <div id="imagePreview" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                                        <div>
+                                            <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                                            <p class="text-muted mt-2">Vista previa</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3">
+                                <small>
+                                    <i class="bi bi-info-circle"></i>
+                                    La imagen se optimizará automáticamente para web
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('productos.listar') }}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Crear Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ayuda -->
+        <div class="card shadow mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-lightbulb"></i> Consejos para Productos</h6>
+                <ul class="small text-muted mb-0">
+                    <li>Usa nombres descriptivos y atractivos</li>
+                    <li>Agrega una buena descripción que destaque las características</li>
+                    <li>Las imágenes de buena calidad aumentan las ventas</li>
+                    <li>El SKU te ayuda a identificar productos rápidamente</li>
+                    <li>Los productos destacados aparecen en la página principal</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Preview de imagen antes de subir
+function previewImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('imagePreview');
+
+    if (file) {
+        // Validar tamaño (16MB)
+        const maxSize = 16 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('La imagen es demasiado grande. Tamaño máximo: 16 MB');
+            event.target.value = '';
+            return;
+        }
+
+        // Validar tipo
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('Formato de imagen no válido. Usa: PNG, JPG, JPEG, GIF o WEBP');
+            event.target.value = '';
+            return;
+        }
+
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="img-fluid rounded" style="max-height: 300px;">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = `
+            <div>
+                <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                <p class="text-muted mt-2">Vista previa</p>
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}

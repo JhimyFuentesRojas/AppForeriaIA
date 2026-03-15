@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: floreria_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "root123"
+      MYSQL_DATABASE: floreria_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - floreria-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: floreria_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+    networks:
+      - floreria-network
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  floreria-network:
+    driver: bridge
