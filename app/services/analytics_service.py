@@ -87,6 +87,108 @@ class AnalyticsService:
             'precio': float(p.precio)
         } for p in productos]
 
+    @staticmethod
+    def obtener_productos_sin_ventas():
+        """Productos activos que nunca han sido vendidos."""
+        vendidos_ids = db.session.query(DetallePedido.producto_id).distinct()
+        productos = Producto.query.filter(
+            Producto.activo == True,
+            ~Producto.id.in_(vendidos_ids)
+        ).all()
+        return [{'nombre': p.nombre, 'stock': p.stock, 'precio': float(p.precio)} for p in productos]
+
+    @staticmethod
+    def obtener_ventas_por_producto():
+        """Ventas totales por producto (todos, no solo top 5)."""
+        resultados = db.session.query(
+            Producto.nombre,
+            func.sum(DetallePedido.cantidad).label('total_vendido'),
+            func.sum(DetallePedido.subtotal).label('ingresos')
+        ).join(
+            DetallePedido, Producto.id == DetallePedido.producto_id
+        ).group_by(
+            Producto.id
+        ).order_by(
+            desc('total_vendido')
+        ).all()
+        return [{'nombre': r[0], 'cantidad': int(r[1]), 'ingresos': float(r[2])} for r in resultados]
+
+    @classmethod
+    def generar_analisis_completo_para_reporte(cls):
+        """
+        Genera un análisis ejecutivo detallado con recomendaciones de negocio concretas.
+        Devuelve un dict con: resumen, recomendaciones (lista), conclusion.
+        """
+        kpis          = cls.obtener_kpis()
+        mas_vendidos  = cls.obtener_productos_mas_vendidos(5)
+        categorias    = cls.obtener_categorias_populares()
+        alertas_stock = cls.obtener_productos_alertas_stock()
+        sin_ventas    = cls.obtener_productos_sin_ventas()
+        todos_prod    = cls.obtener_ventas_por_producto()
+
+        vendidos_nombres = {p['nombre'] for p in todos_prod}
+        cat_top   = categorias[:2]  if categorias else []
+        cat_bajas = categorias[-2:] if len(categorias) > 2 else []
+
+        # Productos populares con stock bajo (sí se venden Y tienen poco stock)
+        alertas_populares = [
+            p for p in alertas_stock if p['nombre'] in vendidos_nombres
+        ]
+
+        contexto  = f"Ventas totales: ${kpis['ventas_totales']:,.2f}\n"
+        contexto += f"Pedidos hoy: {kpis['pedidos_hoy']}\n\n"
+
+        contexto += "PRODUCTOS VENDIDOS (ranking por unidades):\n"
+        for p in todos_prod:
+            contexto += f"  {p['nombre']}: {p['cantidad']} uds vendidas, ${p['ingresos']:,.2f}\n"
+
+        if sin_ventas:
+            contexto += "\nPRODUCTOS SIN NINGUNA VENTA — ACCION REQUERIDA: promocion, descuento o combo (NO reponer):\n"
+            for p in sin_ventas:
+                contexto += f"  {p['nombre']}: {p['stock']} uds en stock sin vender\n"
+
+        if alertas_populares:
+            contexto += "\nPRODUCTOS POPULARES CON POCO STOCK — ACCION REQUERIDA: reponer urgente:\n"
+            for p in alertas_populares:
+                nivel = "AGOTADO" if p['stock'] == 0 else f"{p['stock']} uds restantes"
+                contexto += f"  {p['nombre']}: {nivel}\n"
+
+        contexto += "\nCATEGORIAS MAS VENDIDAS (lideres):\n"
+        for c in cat_top:
+            contexto += f"  {c['nombre']}: {c['porcentaje']}% participacion, {c['cantidad']} uds\n"
+
+        if cat_bajas:
+            contexto += "\nCATEGORIAS CON MENOR PARTICIPACION — ACCION REQUERIDA: estrategia para impulsar:\n"
+            for c in cat_bajas:
+                contexto += f"  {c['nombre']}: {c['porcentaje']}% participacion, {c['cantidad']} uds\n"
+
+        prompt = """Eres consultor de una floreria. Responde en espanol, sin markdown, sin asteriscos, solo texto plano.
+Usa este formato exacto:
+
+RESUMEN:
+[2-3 oraciones: producto estrella, categoria lider, ventas totales, menciona si hay categorias con poca participacion]
+
+RECOMENDACIONES:
+1. Titulo corto: explicacion de 1-2 oraciones con nombres exactos de productos.
+2. Titulo corto: explicacion.
+3. Titulo corto: explicacion.
+4. Titulo corto: explicacion.
+
+CONCLUSION:
+[1-2 oraciones con la accion mas urgente]
+
+El contexto ya indica la accion correcta para cada producto y categoria. Respetala al pie de la letra:
+- Si dice ACCION: promocion/descuento/combo -> usa esa accion, nunca sugieras reponer ese producto.
+- Si dice ACCION: reponer urgente -> recomienda reposicion con cantidad concreta.
+- Si dice ACCION: estrategia para impulsar -> sugiere bundle, descuento de categoria o showcase."""
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user",   "content": contexto},
+        ]
+        respuesta = ai_service.obtener_respuesta(messages, temperature=0.6)
+        return _parsear_analisis(respuesta)
+
     @classmethod
     def generar_resumen_ia(cls):
         """Genera un análisis narrativo inteligente del estado del negocio usando Groq"""
@@ -132,3 +234,71 @@ class AnalyticsService:
         ]
         
         return ai_service.obtener_respuesta(messages, temperature=0.5)
+
+
+def _parsear_analisis(texto):
+    """
+    Parsea la respuesta estructurada de Groq en secciones.
+    Devuelve dict con claves: resumen, recomendaciones (list of dicts), conclusion.
+    Si el formato no se detecta, todo va al resumen.
+    """
+    resultado = {'resumen': '', 'recomendaciones': [], 'conclusion': ''}
+    if not texto:
+        return resultado
+
+    import re
+    seccion_actual = None
+    buffer = []
+
+    for linea in texto.splitlines():
+        l = linea.strip()
+        if re.match(r'^RESUMEN\s*:', l, re.IGNORECASE):
+            seccion_actual = 'resumen'
+            resto = re.sub(r'^RESUMEN\s*:', '', l, flags=re.IGNORECASE).strip()
+            if resto:
+                buffer = [resto]
+            else:
+                buffer = []
+        elif re.match(r'^RECOMENDACIONES\s*:', l, re.IGNORECASE):
+            if seccion_actual == 'resumen':
+                resultado['resumen'] = ' '.join(buffer).strip()
+            seccion_actual = 'recomendaciones'
+            buffer = []
+        elif re.match(r'^CONCLUSI[ÓO]N\s*:', l, re.IGNORECASE):
+            if seccion_actual == 'recomendaciones':
+                _flush_recomendaciones(buffer, resultado)
+            seccion_actual = 'conclusion'
+            resto = re.sub(r'^CONCLUSI[ÓO]N\s*:', '', l, flags=re.IGNORECASE).strip()
+            buffer = [resto] if resto else []
+        else:
+            if l:
+                buffer.append(l)
+
+    # Vaciar último buffer
+    if seccion_actual == 'resumen':
+        resultado['resumen'] = ' '.join(buffer).strip()
+    elif seccion_actual == 'recomendaciones':
+        _flush_recomendaciones(buffer, resultado)
+    elif seccion_actual == 'conclusion':
+        resultado['conclusion'] = ' '.join(buffer).strip()
+
+    # Fallback: si no se pudo parsear, poner todo en resumen
+    if not resultado['resumen'] and not resultado['recomendaciones']:
+        resultado['resumen'] = texto.strip()
+
+    return resultado
+
+
+def _flush_recomendaciones(buffer, resultado):
+    import re
+    rec_actual = None
+    for linea in buffer:
+        m = re.match(r'^(\d+)\.\s*([^:]+):\s*(.*)', linea)
+        if m:
+            if rec_actual:
+                resultado['recomendaciones'].append(rec_actual)
+            rec_actual = {'titulo': m.group(2).strip(), 'detalle': m.group(3).strip()}
+        elif rec_actual:
+            rec_actual['detalle'] += ' ' + linea.strip()
+    if rec_actual:
+        resultado['recomendaciones'].append(rec_actual)
