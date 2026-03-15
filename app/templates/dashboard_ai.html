@@ -93,9 +93,14 @@
       <h2 class="fw-bold text-dark mb-0">Dashboard Inteligente <span class="badge bg-primary fs-6 align-middle"><i class="bi bi-robot"></i> by Groq IA</span></h2>
       <p class="text-muted">Análisis en tiempo real de tu florería</p>
     </div>
-    <button class="btn btn-outline-primary shadow-sm" id="btn-refresh">
-      <i class="bi bi-arrow-clockwise"></i> Actualizar
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary shadow-sm" id="btn-refresh">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+      </button>
+      <a href="/api/admin/dashboard-report" class="btn btn-success shadow-sm" id="btn-download-pdf">
+        <i class="bi bi-file-earmark-pdf"></i> Descargar Reporte PDF
+      </a>
+    </div>
   </div>
 
   <div id="main-dashboard" class="position-relative">

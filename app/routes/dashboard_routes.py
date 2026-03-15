@@ -1,10 +1,12 @@
 """Rutas para el Dashboard Inteligente"""
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, send_file
 from app.auth.decorators import admin_required
 from app.services.analytics_service import AnalyticsService
+from app.services.dashboard_pdf_generator import generar_reporte_dashboard_pdf
 from app.models import Producto
 from app.extensions import db
+from datetime import datetime
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -25,7 +27,6 @@ def obtener_datos_dashboard():
         categorias = AnalyticsService.obtener_categorias_populares()
         alertas_stock = AnalyticsService.obtener_productos_alertas_stock()
         
-        # Generar texto descriptivo con IA
         resumen_ia = AnalyticsService.generar_resumen_ia()
         
         datos = {
@@ -45,6 +46,30 @@ def obtener_datos_dashboard():
             'error': str(e),
             'analisis_ia': f"Error al generar análisis: {str(e)}"
         }), 500
+
+@dashboard_bp.route('/api/admin/dashboard-report', methods=['GET'])
+@admin_required
+def descargar_reporte_pdf():
+    """Genera y descarga el reporte PDF del Dashboard IA (solo admin)"""
+    try:
+        kpis = AnalyticsService.obtener_kpis()
+        mas_vendidos = AnalyticsService.obtener_productos_mas_vendidos()
+        categorias = AnalyticsService.obtener_categorias_populares()
+        alertas_stock = AnalyticsService.obtener_productos_alertas_stock()
+        analisis = AnalyticsService.generar_analisis_completo_para_reporte()
+
+        buffer = generar_reporte_dashboard_pdf(kpis, mas_vendidos, categorias, alertas_stock, analisis)
+
+        nombre_archivo = f"reporte_dashboard_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=nombre_archivo,
+        )
+    except Exception as e:
+        return jsonify({'error': f'Error al generar reporte: {str(e)}'}), 500
+
 
 @dashboard_bp.route('/api/admin/update-stock', methods=['POST'])
 @admin_required
